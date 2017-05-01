@@ -6,7 +6,7 @@ from tensorflow.contrib.rnn.python.ops.core_rnn_cell_impl import _checked_scope
 
 
 class ACTWrapper(rnn.RNNCell):
-    """Adaptive Computation Time wrapper (cf. "Adaptive Computation Time for RNN's" by Alex Graves)"""
+    """Adaptive Computation Time wrapper (based on https://arxiv.org/abs/1603.08983)"""
 
     def __init__(self, cell, ponder_limit=100, epsilon=0.01, init_halting_bias=1.0, reuse=None):
         self._cell = cell
