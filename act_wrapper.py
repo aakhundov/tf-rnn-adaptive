@@ -58,6 +58,9 @@ class ACTWrapper(rnn.RNNCell):
             inputs_and_zero = tf.concat([inputs, tf.fill([batch_size, 1], 0.0)], 1)
             inputs_and_one = tf.concat([inputs, tf.fill([batch_size, 1], 1.0)], 1)
 
+            zero_state = tf.convert_to_tensor(self._cell.zero_state(batch_size, state.dtype))
+            zero_output = tf.fill([batch_size, self._cell.output_size], tf.constant(0.0, state.dtype))
+
             def loop_fn(time, cell_output, cell_state, loop_state):
                 emit_output = cell_output
 
@@ -68,9 +71,11 @@ class ACTWrapper(rnn.RNNCell):
                     elements_finished = tf.fill([batch_size], False)
 
                     next_loop_state = [
-                        tf.TensorArray(state.dtype, size=1, dynamic_size=True),   # halting probs from ponder steps
-                        tf.TensorArray(state.dtype, size=1, dynamic_size=True),   # cell states from ponder steps
-                        tf.fill([batch_size], 0.0)                                # running sum of halting probs
+                        zero_state,                  # running state
+                        zero_output,                 # running output
+                        tf.fill([batch_size], 0),    # ponder steps
+                        tf.fill([batch_size], 0.0),  # remainders
+                        tf.fill([batch_size], 0.0)   # running sum of halting probs
                     ]
                 else:
                     next_input = inputs_and_zero
@@ -85,42 +90,43 @@ class ACTWrapper(rnn.RNNCell):
                         _linear([joint_state], 1, True, self._init_halting_bias), 1
                     ))
 
-                    previous_p_sum = loop_state[2]
+                    previous_p_sum = loop_state[4]
                     current_h_sum = previous_p_sum + current_h
 
                     halting_condition = current_h_sum >= 1.0 - self._epsilon
+                    previous_halting_condition = previous_p_sum >= 1.0 - self._epsilon
                     limit_condition = time >= self._ponder_limit
-                    elements_finished = tf.logical_or(halting_condition, limit_condition)
-                    current_p = tf.where(elements_finished, 1.0 - previous_p_sum, current_h)
 
-                    loop_state[0] = loop_state[0].write(time - 1, current_p)
-                    loop_state[1] = loop_state[1].write(time - 1, cell_state)
-                    loop_state[2] = previous_p_sum + current_p
+                    elements_finished = tf.logical_or(halting_condition, limit_condition)
+                    just_finished = tf.logical_xor(elements_finished, previous_halting_condition)
+                    current_p = tf.where(elements_finished, 1.0 - previous_p_sum, current_h)
+                    expanded_current_p = tf.expand_dims(current_p, 1)
+
+                    if state_is_tuple:
+                        loop_state[0] += tf.expand_dims(expanded_current_p, 0) * cell_state
+                    else:
+                        loop_state[0] += expanded_current_p * cell_state
+
+                    loop_state[1] += expanded_current_p * cell_output
+                    loop_state[2] = tf.where(just_finished, tf.fill([batch_size], time), loop_state[2])
+                    loop_state[3] = tf.where(just_finished, current_p, loop_state[3])
+                    loop_state[4] = previous_p_sum + current_p
+
                     next_loop_state = loop_state
 
                 return (elements_finished, next_input, next_cell_state,
                         emit_output, next_loop_state)
 
-            outputs_ta, _, last_loop_state = tf.nn.raw_rnn(self._cell, loop_fn, scope=scope)
-
-            ps = last_loop_state[0].stack()
-            expanded_ps = tf.expand_dims(ps, 2)
-            states = last_loop_state[1].stack()
-            outputs = outputs_ta.stack()
-
-            final_output = tf.reduce_sum(outputs * expanded_ps, 0)
+            _, _, last_loop_state = tf.nn.raw_rnn(self._cell, loop_fn, scope=scope)
 
             if state_is_tuple:
-                twice_expanded_ps = tf.expand_dims(expanded_ps, 1)
-                final_state_merged = tf.reduce_sum(states * twice_expanded_ps, 0)
-                final_state_tuple = tf.unstack(final_state_merged, axis=0)
-                final_state = state_tuple_type(*final_state_tuple)
+                final_state = state_tuple_type(*tf.unstack(last_loop_state[0]))
             else:
-                final_state = tf.reduce_sum(states * expanded_ps, 0)
+                final_state = last_loop_state[0]
 
-            ponder_steps = tf.cast(tf.reduce_sum(tf.sign(ps), 0), tf.int32)
-            remainder_indices = tf.stack([ponder_steps - 1, tf.range(0, batch_size)], 1)
-            remainders = tf.gather_nd(ps, remainder_indices)
+            final_output = last_loop_state[1]
+            ponder_steps = last_loop_state[2]
+            remainders = last_loop_state[3]
 
             self._ponder_steps.append(ponder_steps)
             self._remainders.append(remainders)

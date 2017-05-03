@@ -20,14 +20,13 @@ IMG_LABELS = 10
 TIME_STEPS = 28
 TIME_OFFSET = 0
 NUM_HIDDEN = 128
-TIME_PENALTY = 0.05
+TIME_PENALTY = 0.01
 LEARNING_RATE = 0.001
 
 
 # setting up RNN cells
 cell = rnn.BasicLSTMCell(NUM_HIDDEN)
 cell = ACTWrapper(cell, ponder_limit=10)
-
 
 # setting up placeholders
 xs = tf.placeholder(tf.float32, [None, IMG_ROWS * IMG_COLS])
@@ -62,7 +61,7 @@ def create_rnn_with_while_loop():
 
         tf.get_variable_scope().reuse_variables()
 
-        def cond(time_step, output, state):
+        def cond(time_step, *_):
             return time_step < TIME_STEPS
 
         def body(time_step, output, state):
@@ -80,7 +79,7 @@ def create_rnn_with_while_loop():
 
 def create_rnn_with_raw_rnn():
     """Create an RNN by means of tf.raw_rnn() function"""
-    def loop_fn(time, cell_output, cell_state, loop_state):
+    def loop_fn(time, cell_output, cell_state, *_):
         batch_size = tf.shape(xs)[0]
 
         elements_finished = tf.fill([batch_size], time >= TIME_STEPS)
@@ -118,8 +117,8 @@ def create_rnn_with_dynamic_rnn():
 # creating RNN and fetching its last output
 # TODO: currently only create_rnn_manually() works with ACTWrapper,
 # TODO: other methods cause strange error during backpropagation
+print("Creating network...")
 last_output = create_rnn_manually()
-
 
 # inference artifacts
 out_weights = tf.Variable(tf.truncated_normal([NUM_HIDDEN, IMG_LABELS], stddev=0.01), name="out_weights")
@@ -135,16 +134,20 @@ loss = -tf.reduce_sum(ys * tf.log(prediction))
 if isinstance(cell, ACTWrapper):
     loss = loss + TIME_PENALTY * cell.ponder_cost
 optimizer = tf.train.AdamOptimizer(LEARNING_RATE)
+print("Computing gradients...")
 train = optimizer.minimize(loss)
 
 
 # (downloading and) extracting MNIST dataset
+print("Preparing data...")
 dataset = input_data.read_data_sets(DATA_FOLDER, one_hot=True)
 
 
 with tf.Session() as sess:
+    print("Initializing variables...")
     sess.run(tf.global_variables_initializer())
 
+    print("Training...")
     print()
 
     for epoch in range(EPOCHS):
