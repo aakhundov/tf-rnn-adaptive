@@ -57,78 +57,65 @@ class ACTWrapper(rnn.RNNCell):
 
             inputs_and_zero = tf.concat([inputs, tf.fill([batch_size, 1], 0.0)], 1)
             inputs_and_one = tf.concat([inputs, tf.fill([batch_size, 1], 1.0)], 1)
-
             zero_state = tf.convert_to_tensor(self._cell.zero_state(batch_size, state.dtype))
             zero_output = tf.fill([batch_size, self._cell.output_size], tf.constant(0.0, state.dtype))
 
-            def loop_fn(time, cell_output, cell_state, loop_state):
-                emit_output = cell_output
+            def cond(finished, *_):
+                return tf.reduce_any(tf.logical_not(finished))
 
-                if cell_output is None:
-                    next_input = inputs_and_one
-                    next_cell_state = state
+            def body(previous_finished, time_step,
+                     previous_state, running_output, running_state,
+                     ponder_steps, remainders, running_p_sum):
 
-                    elements_finished = tf.fill([batch_size], False)
+                current_inputs = tf.where(tf.equal(time_step, 1), inputs_and_one, inputs_and_zero)
+                current_output, current_state = self._cell(current_inputs, previous_state)
 
-                    next_loop_state = [
-                        zero_state,                  # running state
-                        zero_output,                 # running output
-                        tf.fill([batch_size], 0),    # ponder steps
-                        tf.fill([batch_size], 0.0),  # remainders
-                        tf.fill([batch_size], 0.0)   # running sum of halting probs
-                    ]
+                if state_is_tuple:
+                    joint_current_state = tf.concat(current_state, 1)
                 else:
-                    next_input = inputs_and_zero
-                    next_cell_state = cell_state
+                    joint_current_state = current_state
 
-                    if state_is_tuple:
-                        joint_state = tf.concat(cell_state, 1)
-                    else:
-                        joint_state = cell_state
+                current_h = tf.nn.sigmoid(tf.squeeze(
+                    _linear([joint_current_state], 1, True, self._init_halting_bias), 1
+                ))
 
-                    current_h = tf.nn.sigmoid(tf.squeeze(
-                        _linear([joint_state], 1, True, self._init_halting_bias), 1
-                    ))
+                current_h_sum = running_p_sum + current_h
 
-                    previous_p_sum = loop_state[4]
-                    current_h_sum = previous_p_sum + current_h
+                limit_condition = time_step >= self._ponder_limit
+                halting_condition = current_h_sum >= 1.0 - self._epsilon
+                current_finished = tf.logical_or(halting_condition, limit_condition)
+                just_finished = tf.logical_xor(current_finished, previous_finished)
 
-                    halting_condition = current_h_sum >= 1.0 - self._epsilon
-                    previous_halting_condition = previous_p_sum >= 1.0 - self._epsilon
-                    limit_condition = time >= self._ponder_limit
+                current_p = tf.where(current_finished, 1.0 - running_p_sum, current_h)
+                expanded_current_p = tf.expand_dims(current_p, 1)
 
-                    elements_finished = tf.logical_or(halting_condition, limit_condition)
-                    just_finished = tf.logical_xor(elements_finished, previous_halting_condition)
-                    current_p = tf.where(elements_finished, 1.0 - previous_p_sum, current_h)
-                    expanded_current_p = tf.expand_dims(current_p, 1)
+                running_output += expanded_current_p * current_output
 
-                    if state_is_tuple:
-                        loop_state[0] += tf.expand_dims(expanded_current_p, 0) * cell_state
-                    else:
-                        loop_state[0] += expanded_current_p * cell_state
+                if state_is_tuple:
+                    running_state += tf.expand_dims(expanded_current_p, 0) * current_state
+                else:
+                    running_state += expanded_current_p * current_state
 
-                    loop_state[1] += expanded_current_p * cell_output
-                    loop_state[2] = tf.where(just_finished, tf.fill([batch_size], time), loop_state[2])
-                    loop_state[3] = tf.where(just_finished, current_p, loop_state[3])
-                    loop_state[4] = previous_p_sum + current_p
+                ponder_steps = tf.where(just_finished, tf.fill([batch_size], time_step), ponder_steps)
+                remainders = tf.where(just_finished, current_p, remainders)
+                running_p_sum += current_p
 
-                    next_loop_state = loop_state
+                return (current_finished, time_step + 1,
+                        current_state, running_output, running_state,
+                        ponder_steps, remainders, running_p_sum)
 
-                return (elements_finished, next_input, next_cell_state,
-                        emit_output, next_loop_state)
-
-            _, _, last_loop_state = tf.nn.raw_rnn(self._cell, loop_fn, scope=scope)
+            _, _, _, final_output, final_state, all_ponder_steps, all_remainders, _ = \
+                tf.while_loop(cond, body, [
+                    tf.fill([batch_size], False), tf.constant(1), state, zero_output, zero_state,
+                    tf.fill([batch_size], 0), tf.fill([batch_size], 0.0), tf.fill([batch_size], 0.0)
+                ])
 
             if state_is_tuple:
-                final_state = state_tuple_type(*tf.unstack(last_loop_state[0]))
-            else:
-                final_state = last_loop_state[0]
+                final_state = state_tuple_type(
+                    *tf.unstack(final_state)
+                )
 
-            final_output = last_loop_state[1]
-            ponder_steps = last_loop_state[2]
-            remainders = last_loop_state[3]
-
-            self._ponder_steps.append(ponder_steps)
-            self._remainders.append(remainders)
+            self._ponder_steps.append(all_ponder_steps)
+            self._remainders.append(all_remainders)
 
             return final_output, final_state
