@@ -26,7 +26,7 @@ LEARNING_RATE = 0.001
 
 # setting up RNN cells
 cell = rnn.BasicLSTMCell(NUM_HIDDEN)
-cell = ACTWrapper(cell, ponder_limit=10)
+# cell = ACTWrapper(cell, ponder_limit=10)
 
 # setting up placeholders
 xs = tf.placeholder(tf.float32, [None, IMG_ROWS * IMG_COLS])
@@ -48,6 +48,14 @@ def create_rnn_manually():
             output, state = cell(time_step_input, state)
 
     return output
+
+
+def create_rnn_with_static_rnn():
+    rnn_outputs, rnn_state = rnn.static_rnn(
+        cell, tf.unstack(images[:, TIME_OFFSET: TIME_OFFSET + TIME_STEPS, :], axis=1), dtype=tf.float32
+    )
+
+    return rnn_outputs[-1]
 
 
 def create_rnn_with_while_loop():
@@ -89,7 +97,7 @@ def create_rnn_with_raw_rnn():
         else:
             next_cell_state = cell_state
 
-        next_input = images[:, tf.minimum(time, TIME_STEPS) + TIME_OFFSET, :]
+        next_input = images[:, tf.minimum(time-1, TIME_STEPS-1) + TIME_OFFSET, :]
 
         emit_output = cell_output
         next_loop_state = None
@@ -118,7 +126,7 @@ def create_rnn_with_dynamic_rnn():
 # TODO: currently only create_rnn_manually() works with ACTWrapper,
 # TODO: other methods cause strange error during backpropagation
 print("Creating network...")
-last_output = create_rnn_manually()
+last_output = create_rnn_with_static_rnn()
 
 # inference artifacts
 out_weights = tf.Variable(tf.truncated_normal([NUM_HIDDEN, IMG_LABELS], stddev=0.01), name="out_weights")
