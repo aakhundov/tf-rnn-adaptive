@@ -26,7 +26,7 @@ LEARNING_RATE = 0.001
 
 # setting up RNN cells
 cell = rnn.BasicLSTMCell(NUM_HIDDEN)
-# cell = ACTWrapper(cell, ponder_limit=10)
+cell = ACTWrapper(cell, ponder_limit=10)
 
 # setting up placeholders
 xs = tf.placeholder(tf.float32, [None, IMG_ROWS * IMG_COLS])
