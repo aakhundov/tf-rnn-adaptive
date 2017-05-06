@@ -123,8 +123,8 @@ def create_rnn_with_dynamic_rnn():
 
 
 # creating RNN and fetching its last output
-# TODO: currently only create_rnn_manually() works with ACTWrapper,
-# TODO: other methods cause strange error during backpropagation
+# TODO: dynamic RNN creation methods don't work with
+# TODO: ponder_cost being a part of a loss function
 print("Creating network...")
 last_output = create_rnn_with_static_rnn()
 
