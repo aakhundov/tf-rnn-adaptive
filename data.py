@@ -22,20 +22,20 @@ def generate_parity_data(batch_size, dimensions=64, seed=None):
         np.random.seed(seed)
 
     for b in range(batch_size):
-        vector = np.zeros([dimensions])
+        input_vector = np.zeros([dimensions])
+        target_vector = np.zeros([2])
+
         idx = np.arange(0, dimensions)
         np.random.shuffle(idx)
 
         threshold = np.random.randint(1, dimensions + 1)
         values = np.random.randint(2, size=[threshold]) * 2 - 1
-        vector[idx[:threshold]] = values
+        parity = np.sum(np.where(values > 0, [1.0], [0.0]), dtype=np.int32) % 2
+        input_vector[idx[:threshold]] = values
+        target_vector[parity] = 1
 
-        inputs.append([vector])
-        targets.append([[
-            np.sum(np.where(
-                values > 0, [1.0], [0.0]
-            )) % 2
-        ]])
+        inputs.append([input_vector])
+        targets.append([target_vector])
 
     if seed is not None:
         np.random.seed()
@@ -168,12 +168,12 @@ def generate_sort_data(batch_size, min_numbers=2, max_numbers=15, seed=None):
 
 def test_parity_data(inputs, targets):
     for b in range(len(inputs)):
-        computed_parity = 0.0
+        computed_parity = 0
         for d in range(len(inputs[b][0])):
             if inputs[b][0][d] == 1.0:
                 computed_parity = 1 - computed_parity
 
-        target_parity = int(targets[b][0][0])
+        target_parity = 0 if targets[b][0][0] > 0 else 1
         assert (computed_parity == target_parity),\
             "Parity does not match at batch {0}: {1} (computed) vs. {2} (target)".format(
                     b, computed_parity, target_parity
