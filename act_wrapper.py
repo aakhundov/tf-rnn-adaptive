@@ -42,7 +42,8 @@ class ACTWrapper(rnn.RNNCell):
         if len(self._remainders) == 0:
             raise RuntimeError("ponder_cost should be invoked after all call()'s")
         if self._ponder_cost_op is None:
-            self._ponder_cost_op = tf.reduce_sum(tf.stack(self._remainders))
+            batch_size = tf.cast(tf.shape(self._remainders[0])[0], self._remainders[0].dtype)
+            self._ponder_cost_op = tf.reduce_sum(tf.stack(self._remainders)) / batch_size
         return self._ponder_cost_op
 
     def __call__(self, inputs, state, scope=None):
