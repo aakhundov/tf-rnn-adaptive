@@ -15,16 +15,26 @@ logic_gates = [
 ]
 
 
-def generate_data(batch_size, time_steps, max_gates=10):
-    inputs, targets = [], []
-    gates_num = len(logic_gates)
+def generate_data(batch_size, min_time_steps=1, max_time_steps=10, max_gates=10, seed=None):
+    total_gates = len(logic_gates)
+    inputs, targets, seq_length = [], [], []
+
+    if seed is not None:
+        np.random.seed(seed)
 
     for b in range(batch_size):
-        input_steps = np.zeros([time_steps, max_gates * gates_num + 2])
-        target_steps = np.zeros([time_steps, 1])
+        input_steps = np.zeros([max_time_steps, max_gates * total_gates + 2])
+        target_steps = np.zeros([max_time_steps, 1])
+
+        seq_length.append(
+            np.random.randint(
+                min_time_steps,
+                max_time_steps + 1
+            )
+        )
 
         b0 = np.random.randint(2)
-        for t in range(time_steps):
+        for t in range(seq_length[-1]):
             b1 = np.random.randint(2)
             if t == 0:
                 input_steps[t][0] = b0
@@ -33,9 +43,9 @@ def generate_data(batch_size, time_steps, max_gates=10):
             num_gates = np.random.randint(1, max_gates + 1)
 
             for g in range(num_gates):
-                gate = np.random.randint(gates_num)
+                gate = np.random.randint(total_gates)
                 b1, b0 = logic_gates[gate][b1][b0], b1
-                input_steps[t][2 + g * gates_num + gate] = 1
+                input_steps[t][2 + g * total_gates + gate] = 1
 
             target_steps[t][0] = b1
             b0 = b1
@@ -43,13 +53,16 @@ def generate_data(batch_size, time_steps, max_gates=10):
         inputs.append(input_steps)
         targets.append(target_steps)
 
-    return np.stack(inputs), np.stack(targets)
+    if seed is not None:
+        np.random.seed()
+
+    return np.stack(inputs), np.stack(targets), seq_length
 
 
-def test_data(inputs, targets):
+def test_data(inputs, targets, seq_length):
     gates_num = len(logic_gates)
     for b in range(len(inputs)):
-        for t in range(len(inputs[b])):
+        for t in range(seq_length[b]):
             b0 = int(inputs[b][0][0]) if t == 0 else b1
             b1 = int(inputs[b][t][1])
 
@@ -71,4 +84,4 @@ def test_data(inputs, targets):
 
 
 for i in range(100):
-    test_data(*generate_data(16, 10))
+    test_data(*generate_data(16))

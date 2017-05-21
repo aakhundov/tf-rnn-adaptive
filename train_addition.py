@@ -1,15 +1,25 @@
 import numpy as np
 
 
-def generate_data(batch_size, time_steps, max_digits=5):
-    inputs, targets = [], []
+def generate_data(batch_size, min_time_steps=1, max_time_steps=5, max_digits=5, seed=None):
+    inputs, targets, seq_length = [], [], []
+
+    if seed is not None:
+        np.random.seed(seed)
 
     for b in range(batch_size):
-        input_steps = np.zeros([time_steps, max_digits * 10])
-        target_steps = np.zeros([time_steps, max_digits+1, 11])
+        input_steps = np.zeros([max_time_steps, max_digits * 10])
+        target_steps = np.zeros([max_time_steps, max_digits+1, 11])
+
+        seq_length.append(
+            np.random.randint(
+                min_time_steps,
+                max_time_steps + 1
+            )
+        )
 
         running_sum = 0
-        for t in range(time_steps):
+        for t in range(seq_length[-1]):
             digits_no = np.random.randint(1, max_digits + 1)
             current_number = np.random.randint(10 ** (digits_no - 1), 10 ** digits_no)
             number_digits = np.array([int(c) for c in str(current_number)])
@@ -29,13 +39,16 @@ def generate_data(batch_size, time_steps, max_digits=5):
         inputs.append(input_steps)
         targets.append(target_steps)
 
-    return np.stack(inputs), np.stack(targets)
+    if seed is not None:
+        np.random.seed()
+
+    return np.stack(inputs), np.stack(targets), seq_length
 
 
-def test_data(inputs, targets):
+def test_data(inputs, targets, seq_length):
     for b in range(len(inputs)):
         running_sum = 0
-        for t in range(len(inputs[b])):
+        for t in range(seq_length[b]):
             current_number = 0
             for d in range(len(inputs[b][t]) // 10):
                 one_hot = inputs[b][t][d * 10:d * 10 + 10]
@@ -56,4 +69,4 @@ def test_data(inputs, targets):
 
 
 for i in range(100):
-    test_data(*generate_data(32, 5))
+    test_data(*generate_data(32))

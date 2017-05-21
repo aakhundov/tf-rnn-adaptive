@@ -1,8 +1,11 @@
 import numpy as np
 
 
-def generate_data(batch_size, dimensions=64):
+def generate_data(batch_size, dimensions=64, seed=None):
     inputs, targets = [], []
+
+    if seed is not None:
+        np.random.seed(seed)
 
     for b in range(batch_size):
         vector = np.zeros([dimensions])
@@ -19,6 +22,9 @@ def generate_data(batch_size, dimensions=64):
                 values > 0, [1.0], [0.0]
             )) % 2
         ]])
+
+    if seed is not None:
+        np.random.seed()
 
     return np.stack(inputs), np.stack(targets)
 

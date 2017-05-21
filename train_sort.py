@@ -1,16 +1,21 @@
 import numpy as np
 
 
-def generate_data(batch_size, numbers_count, output_dim=15):
-    inputs, targets = [], []
+def generate_data(batch_size, min_numbers=2, max_numbers=15, seed=None):
+    inputs, targets, seq_length = [], [], []
 
-    if output_dim < numbers_count:
-        output_dim = numbers_count
+    if seed is not None:
+        np.random.seed(seed)
 
     for b in range(batch_size):
-        input_steps = np.zeros([numbers_count * 2, 2])
-        target_steps = np.zeros([numbers_count * 2, output_dim])
+        input_steps = np.zeros([max_numbers * 2, 2])
+        target_steps = np.zeros([max_numbers * 2, max_numbers])
 
+        numbers_count = np.random.randint(
+            min_numbers,
+            max_numbers + 1
+        )
+        seq_length.append(numbers_count * 2)
         numbers = np.random.randn(numbers_count)
         indices = np.argsort(numbers)
 
@@ -25,13 +30,17 @@ def generate_data(batch_size, numbers_count, output_dim=15):
         inputs.append(input_steps)
         targets.append(target_steps)
 
-    return np.stack(inputs), np.stack(targets)
+    if seed is not None:
+        np.random.seed()
+
+    return np.stack(inputs), np.stack(targets), seq_length
 
 
-def test_data(inputs, targets):
+def test_data(inputs, targets, seq_length):
     for b in range(len(inputs)):
         numbers, target_indices = [], []
-        numbers_count = len(inputs[b]) // 2
+        numbers_count = seq_length[b] // 2
+
         for n in range(numbers_count):
             numbers.append(inputs[b][n][1])
             target_indices.append(
@@ -51,4 +60,4 @@ def test_data(inputs, targets):
 
 
 for i in range(100):
-    test_data(*generate_data(16, 15))
+    test_data(*generate_data(16))
