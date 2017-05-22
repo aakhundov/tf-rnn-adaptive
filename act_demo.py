@@ -140,7 +140,7 @@ error = tf.reduce_mean(tf.cast(mistakes, tf.float32))
 # training artifacts
 loss = -tf.reduce_sum(ys * tf.log(prediction))
 if isinstance(cell, ACTWrapper):
-    loss = loss + TIME_PENALTY * cell.ponder_cost
+    loss = loss + TIME_PENALTY * cell.get_ponder_cost()
 optimizer = tf.train.AdamOptimizer(LEARNING_RATE)
 print("Computing gradients...")
 train = optimizer.minimize(loss)
@@ -171,7 +171,7 @@ with tf.Session() as sess:
 
         if isinstance(cell, ACTWrapper):
             val_error, val_ponder = sess.run(
-                [error, cell.ponder_steps],
+                [error, cell.get_ponder_steps()],
                 feed_dict={
                     xs: dataset.validation.images,
                     ys: dataset.validation.labels
