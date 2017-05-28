@@ -1,3 +1,5 @@
+import sys
+
 import numpy as np
 import tensorflow as tf
 import tensorflow.contrib.rnn as rnn
@@ -24,16 +26,26 @@ INPUT_SIZE = DIMENSIONS
 NUM_CLASSES = 2
 
 NUM_HIDDEN = 128
-TIME_PENALTY = 0.1
+TIME_PENALTY = 0.001
 PONDER_LIMIT = 20
 LEARNING_RATE = 0.001
-WITH_ACT = False
+WITH_ACT = True
 
 
 if __name__ == "__main__":
 
-    # parsing command line
-    # arguments should be here
+    while len(sys.argv) > 1:
+        option = sys.argv[1]; del sys.argv[1]
+
+        if option == "-seed":
+            SEED = int(sys.argv[1]); del sys.argv[1]
+        elif option == "-penalty":
+            TIME_PENALTY = float(sys.argv[1]); del sys.argv[1]
+        elif option == "-act":
+            WITH_ACT = bool(int(sys.argv[1])); del sys.argv[1]
+        else:
+            print(sys.argv[0], ": invalid option", option)
+            sys.exit(1)
 
     model_name = "{0}_{1}_{2}".format(
         "parity",
@@ -82,15 +94,15 @@ if __name__ == "__main__":
         if WITH_ACT:
             echo("{:10}{:<10}{:<15}{:<17}{:<30}".format(
                 "steps", "error",
-                "soft. loss", "pond. loss",
+                "softmax loss", "ponder loss",
                 "min / avg / std / max ponder"
             ), log)
-            echo("-" * 80, log)
+            echo("-" * 83, log)
         else:
             echo("{:10}{:<10}{:<15}".format(
-                "steps", "error", "soft. loss"
+                "steps", "error", "softmax loss"
             ), log)
-            echo("-" * 30, log)
+            echo("-" * 32, log)
 
         val_xs, val_ys = generate_parity_data(VAL_SIZE, dimensions=DIMENSIONS)
 
