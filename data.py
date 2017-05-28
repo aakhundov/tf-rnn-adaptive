@@ -23,7 +23,6 @@ def generate_parity_data(batch_size, dimensions=64, seed=None):
 
     for b in range(batch_size):
         input_vector = np.zeros([dimensions])
-        target_vector = np.zeros([2])
 
         idx = np.arange(0, dimensions)
         np.random.shuffle(idx)
@@ -32,10 +31,9 @@ def generate_parity_data(batch_size, dimensions=64, seed=None):
         values = np.random.randint(2, size=[threshold]) * 2 - 1
         parity = np.sum(np.where(values > 0, [1.0], [0.0]), dtype=np.int32) % 2
         input_vector[idx[:threshold]] = values
-        target_vector[parity] = 1
 
         inputs.append([input_vector])
-        targets.append([target_vector])
+        targets.append([parity])
 
     if seed is not None:
         np.random.seed()
@@ -43,16 +41,19 @@ def generate_parity_data(batch_size, dimensions=64, seed=None):
     return np.stack(inputs), np.stack(targets)
 
 
-def generate_logic_data(batch_size, min_time_steps=1, max_time_steps=10, max_gates=10, seed=None):
-    total_gates = len(logic_gates)
+def generate_logic_data(batch_size, min_time_steps=1, max_time_steps=10,
+                        min_gates=1, max_gates=10, used_gates=10, seed=None):
     inputs, targets, seq_length = [], [], []
+
+    if used_gates > len(logic_gates):
+        raise AttributeError("used_gates can't be greater than {0}".format(len(logic_gates)))
 
     if seed is not None:
         np.random.seed(seed)
 
     for b in range(batch_size):
-        input_steps = np.zeros([max_time_steps, max_gates * total_gates + 2])
-        target_steps = np.zeros([max_time_steps, 1])
+        input_steps = np.zeros([max_time_steps, max_gates * len(logic_gates) + 2])
+        target_steps = np.zeros([max_time_steps])
 
         seq_length.append(
             np.random.randint(
@@ -68,14 +69,14 @@ def generate_logic_data(batch_size, min_time_steps=1, max_time_steps=10, max_gat
                 input_steps[t][0] = b0
             input_steps[t][1] = b1
 
-            num_gates = np.random.randint(1, max_gates + 1)
+            num_gates = np.random.randint(min_gates, max_gates + 1)
 
             for g in range(num_gates):
-                gate = np.random.randint(total_gates)
+                gate = np.random.randint(used_gates)
                 b1, b0 = logic_gates[gate][b1][b0], b1
-                input_steps[t][2 + g * total_gates + gate] = 1
+                input_steps[t][2 + g * len(logic_gates) + gate] = 1
 
-            target_steps[t][0] = b1
+            target_steps[t] = b1
             b0 = b1
 
         inputs.append(input_steps)
@@ -173,7 +174,7 @@ def test_parity_data(inputs, targets):
             if inputs[b][0][d] == 1.0:
                 computed_parity = 1 - computed_parity
 
-        target_parity = 0 if targets[b][0][0] > 0 else 1
+        target_parity = targets[b][0]
         assert (computed_parity == target_parity),\
             "Parity does not match at batch {0}: {1} (computed) vs. {2} (target)".format(
                     b, computed_parity, target_parity
@@ -197,7 +198,7 @@ def test_logic_data(inputs, targets, seq_length):
                     gate = np.argmax(one_hot)
                     b1, b0 = logic_gates[gate][b1][b0], b1
 
-            target_bit = int(targets[b][t])
+            target_bit = targets[b][t]
             assert (target_bit == b1), \
                 "Target bit does not match at batch {0} time step {1}: {2} (computed) vs. {3} (target)".format(
                     b, t, b1, target_bit
