@@ -39,6 +39,12 @@ class ACTModel:
         self._softmax_loss = None
         self._ponder_loss = None
         self._ponder_steps = None
+        self._boolean_mask = None
+        self._numerical_mask = None
+
+        if self.seq_length is not None:
+            self.boolean_mask = tf.sequence_mask(self.seq_length, self.time_steps)
+            self.numeric_mask = tf.cast(self.boolean_mask, data.dtype)
 
         self.logits
         self.training
@@ -62,16 +68,31 @@ class ACTModel:
 
     @lazy_property
     def evaluation(self):
-        mistakes = tf.reduce_any(tf.not_equal(self.target, tf.argmax(self.logits, 2)), axis=1)
+        if self.seq_length is not None:
+            mistakes = tf.reduce_any(
+                tf.logical_or(
+                    tf.not_equal(self.target, tf.argmax(self.logits, 2)),
+                    tf.logical_not(self.boolean_mask)
+                ), axis=1
+            )
+        else:
+            mistakes = tf.reduce_any(
+                tf.not_equal(self.target, tf.argmax(self.logits, 2)), axis=1
+            )
 
         return tf.reduce_mean(tf.cast(mistakes, tf.float32))
 
     @lazy_property
     def training(self):
-        self._softmax_loss = s2s.sequence_loss(
-            self.logits, self.target,
-            tf.ones_like(self.target, self.logits.dtype)
-        )
+        if self.seq_length is not None:
+            self._softmax_loss = s2s.sequence_loss(
+                self.logits, self.target, self.numeric_mask
+            )
+        else:
+            self._softmax_loss = s2s.sequence_loss(
+                self.logits, self.target,
+                tf.ones_like(self.target, self.logits.dtype)
+            )
 
         if isinstance(self.cell, ACTWrapper):
             self._ponder_loss = self.time_penalty * self.cell.get_ponder_cost(self.seq_length)
