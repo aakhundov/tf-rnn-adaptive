@@ -104,7 +104,7 @@ if __name__ == "__main__":
             ), log)
             echo("-" * 32, log)
 
-        val_xs, val_ys = generate_parity_data(VAL_SIZE, dimensions=DIMENSIONS)
+        val_xs, val_ys = generate_parity_data(VAL_SIZE, dimensions=DIMENSIONS, seed=12345)
 
         for step in range(TRAIN_STEPS):
             batch_xs, batch_ys = generate_parity_data(BATCH_SIZE, dimensions=DIMENSIONS)

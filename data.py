@@ -19,6 +19,7 @@ def generate_parity_data(batch_size, dimensions=64, seed=None):
     inputs, targets = [], []
 
     if seed is not None:
+        state = np.random.get_state()
         np.random.seed(seed)
 
     for b in range(batch_size):
@@ -36,7 +37,7 @@ def generate_parity_data(batch_size, dimensions=64, seed=None):
         targets.append([parity])
 
     if seed is not None:
-        np.random.seed()
+        np.random.set_state(state)
 
     return np.stack(inputs), np.stack(targets)
 
@@ -49,6 +50,7 @@ def generate_logic_data(batch_size, min_time_steps=1, max_time_steps=10,
         raise AttributeError("used_gates can't be greater than {0}".format(len(logic_gates)))
 
     if seed is not None:
+        state = np.random.get_state()
         np.random.seed(seed)
 
     for b in range(batch_size):
@@ -83,7 +85,7 @@ def generate_logic_data(batch_size, min_time_steps=1, max_time_steps=10,
         targets.append(target_steps)
 
     if seed is not None:
-        np.random.seed()
+        np.random.set_state(state)
 
     return np.stack(inputs), np.stack(targets), seq_length
 
@@ -92,6 +94,7 @@ def generate_addition_data(batch_size, min_time_steps=1, max_time_steps=5, max_d
     inputs, targets, seq_length = [], [], []
 
     if seed is not None:
+        state = np.random.get_state()
         np.random.seed(seed)
 
     for b in range(batch_size):
@@ -127,7 +130,7 @@ def generate_addition_data(batch_size, min_time_steps=1, max_time_steps=5, max_d
         targets.append(target_steps)
 
     if seed is not None:
-        np.random.seed()
+        np.random.set_state(state)
 
     return np.stack(inputs), np.stack(targets), seq_length
 
@@ -136,6 +139,7 @@ def generate_sort_data(batch_size, min_numbers=2, max_numbers=15, seed=None):
     inputs, targets, seq_length = [], [], []
 
     if seed is not None:
+        state = np.random.get_state()
         np.random.seed(seed)
 
     for b in range(batch_size):
@@ -162,7 +166,7 @@ def generate_sort_data(batch_size, min_numbers=2, max_numbers=15, seed=None):
         targets.append(target_steps)
 
     if seed is not None:
-        np.random.seed()
+        np.random.set_state(state)
 
     return np.stack(inputs), np.stack(targets), seq_length
 

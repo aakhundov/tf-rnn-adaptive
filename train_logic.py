@@ -114,7 +114,7 @@ if __name__ == "__main__":
 
         val_xs, val_ys, val_seq = generate_logic_data(
             VAL_SIZE, min_time_steps=MIN_TIME_STEPS, max_time_steps=MAX_TIME_STEPS,
-            min_gates=MIN_GATES, max_gates=MAX_GATES, used_gates=USED_GATES)
+            min_gates=MIN_GATES, max_gates=MAX_GATES, used_gates=USED_GATES, seed=12345)
 
         for step in range(TRAIN_STEPS):
             batch_xs, batch_ys, batch_seq = generate_logic_data(
