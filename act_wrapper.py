@@ -29,24 +29,24 @@ class ACTWrapper(rnn.RNNCell):
     def output_size(self):
         return self._cell.output_size
 
-    def get_ponder_steps(self, seq_length=None):
+    def get_ponder_steps(self, sequence_length=None):
         if len(self._ponder_steps) == 0:
             raise RuntimeError("ponder_steps should be invoked after all call()'s")
         if self._ponder_steps_op is None:
             stacked_steps = tf.stack(self._ponder_steps)
-            if seq_length is not None:
-                mask = tf.sequence_mask(seq_length, len(self._remainders))
+            if sequence_length is not None:
+                mask = tf.sequence_mask(sequence_length, len(self._remainders))
                 stacked_steps *= tf.transpose(tf.cast(mask, stacked_steps.dtype))
             self._ponder_steps_op = stacked_steps
         return self._ponder_steps_op
 
-    def get_ponder_cost(self, seq_length=None):
+    def get_ponder_cost(self, sequence_length=None):
         if len(self._remainders) == 0:
             raise RuntimeError("ponder_cost should be invoked after all call()'s")
         if self._ponder_cost_op is None:
             stacked_remainders = tf.stack(self._remainders)
-            if seq_length is not None:
-                mask = tf.sequence_mask(seq_length, len(self._remainders))
+            if sequence_length is not None:
+                mask = tf.sequence_mask(sequence_length, len(self._remainders))
                 stacked_remainders *= tf.transpose(tf.cast(mask, stacked_remainders.dtype))
             batch_size = tf.cast(tf.shape(self._remainders[0])[0], stacked_remainders.dtype)
             self._ponder_cost_op = tf.reduce_sum(stacked_remainders) / batch_size
