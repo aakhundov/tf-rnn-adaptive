@@ -195,7 +195,7 @@ def test_logic_data(inputs, targets, seq_length):
             for g in range((len(inputs[b][t]) - 2) // gates_num):
                 one_hot = inputs[b][t][g * gates_num + 2:(g+1) * gates_num + 2]
                 if np.max(one_hot) == 1.0:
-                    gate = np.argmax(one_hot)
+                    gate = np.asscalar(np.argmax(one_hot))
                     b1, b0 = logic_gates[gate][b1][b0], b1
 
             target_bit = targets[b][t]
