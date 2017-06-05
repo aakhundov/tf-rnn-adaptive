@@ -92,8 +92,8 @@ class ACTModel:
         if len(mistakes_per_output) == 1:
             all_mistakes = mistakes_per_output[0]
         else:
-            concat_mistakes = tf.concat(mistakes_per_output, axis=1)
-            all_mistakes = tf.reduce_any(concat_mistakes, axis=1)
+            stacked_mistakes = tf.stack(mistakes_per_output)
+            all_mistakes = tf.reduce_any(stacked_mistakes, axis=0)
 
         return tf.reduce_mean(tf.cast(all_mistakes, tf.float32))
 

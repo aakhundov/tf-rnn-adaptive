@@ -99,7 +99,7 @@ def generate_addition_data(batch_size, min_time_steps=1, max_time_steps=5, max_d
 
     for b in range(batch_size):
         input_steps = np.zeros([max_time_steps, max_digits * 10])
-        target_steps = np.zeros([max_time_steps, max_digits+1])
+        target_steps = np.zeros([max_time_steps, max_digits + 1])
 
         seq_length.append(
             np.random.randint(
