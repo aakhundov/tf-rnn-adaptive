@@ -63,16 +63,17 @@ class ACTModel:
         output_weights = tf.Variable(initial_weights, name="output_weights")
         output_biases = tf.Variable(initial_biases, name="output_biases")
         logits = tf.matmul(rnn_outputs, output_weights) + output_biases
+        reshaped = tf.reshape(logits, [self.time_steps, -1, self.num_classes])
 
-        return tf.reshape(logits, [-1, self.time_steps, self.num_classes])
+        return tf.transpose(reshaped, perm=(1, 0, 2))
 
     @lazy_property
     def evaluation(self):
         if self.seq_length is not None:
             mistakes = tf.reduce_any(
-                tf.logical_or(
+                tf.logical_and(
                     tf.not_equal(self.target, tf.argmax(self.logits, 2)),
-                    tf.logical_not(self.boolean_mask)
+                    self.boolean_mask
                 ), axis=1
             )
         else:
