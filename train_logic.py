@@ -21,15 +21,16 @@ BATCH_SIZE = 16
 VAL_SIZE = 1000
 
 MIN_GATES = 1
-MAX_GATES = 5
+MAX_GATES = 10
 USED_GATES = 10
 MIN_TIME_STEPS = 1
 MAX_TIME_STEPS = 5
 INPUT_SIZE = MAX_GATES * 10 + 2
 NUM_CLASSES = 2
+NUM_OUTPUTS = 1
 
 NUM_HIDDEN = 128
-PONDER_LIMIT = 20
+PONDER_LIMIT = 10
 TIME_PENALTY = 0.001
 LEARNING_RATE = 0.001
 WITH_ACT = True
@@ -77,12 +78,12 @@ if __name__ == "__main__":
         cell = ACTWrapper(cell, ponder_limit=PONDER_LIMIT)
 
     inputs = tf.placeholder(tf.float32, [None, MAX_TIME_STEPS, INPUT_SIZE])
-    targets = tf.placeholder(tf.int64, [None, MAX_TIME_STEPS])
+    targets = tf.placeholder(tf.int64, [None, MAX_TIME_STEPS, NUM_OUTPUTS])
     seq_length = tf.placeholder(tf.int64, [None])
 
     print("Creating model...")
     model = ACTModel(
-        inputs, targets, MAX_TIME_STEPS, NUM_CLASSES, cell, TIME_PENALTY,
+        inputs, targets, MAX_TIME_STEPS, NUM_CLASSES, cell, NUM_OUTPUTS, TIME_PENALTY,
         seq_length=seq_length, optimizer=tf.train.AdamOptimizer(LEARNING_RATE)
     )
 

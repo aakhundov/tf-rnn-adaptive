@@ -22,13 +22,14 @@ def lazy_property(func):
 
 class ACTModel:
     def __init__(self, data, target, time_steps, num_classes, rnn_cell,
-                 time_penalty=0.001, seq_length=None, optimizer=None):
+                 num_outputs=1, time_penalty=0.001, seq_length=None, optimizer=None):
 
         self.data = data
         self.target = target
         self.time_steps = time_steps
         self.num_classes = num_classes
         self.cell = rnn_cell
+        self.num_outputs = num_outputs
         self.time_penalty = time_penalty
         self.seq_length = seq_length
         self.optimizer = optimizer if optimizer \
@@ -58,42 +59,63 @@ class ACTModel:
         )
 
         rnn_outputs = tf.reshape(rnn_outputs, [-1, self.num_hidden])
-        initial_weights = tf.truncated_normal([self.num_hidden, self.num_classes], stddev=0.01)
-        initial_biases = tf.constant(0.1, shape=[self.num_classes])
-        output_weights = tf.Variable(initial_weights, name="output_weights")
-        output_biases = tf.Variable(initial_biases, name="output_biases")
-        logits = tf.matmul(rnn_outputs, output_weights) + output_biases
-        reshaped = tf.reshape(logits, [self.time_steps, -1, self.num_classes])
 
-        return tf.transpose(reshaped, perm=(1, 0, 2))
+        logits_per_output = []
+        for i in range(self.num_outputs):
+            initial_weights = tf.truncated_normal([self.num_hidden, self.num_classes], stddev=0.01)
+            initial_biases = tf.constant(0.1, shape=[self.num_classes])
+            output_weights = tf.Variable(initial_weights, name="output_weights_" + str(i))
+            output_biases = tf.Variable(initial_biases, name="output_biases_" + str(i))
+            logits = tf.matmul(rnn_outputs, output_weights) + output_biases
+            reshaped = tf.reshape(logits, [self.time_steps, -1, self.num_classes])
+            logits_per_output.append(tf.transpose(reshaped, perm=(1, 0, 2)))
+
+        return logits_per_output
 
     @lazy_property
     def evaluation(self):
-        if self.seq_length is not None:
-            mistakes = tf.reduce_any(
-                tf.logical_and(
-                    tf.not_equal(self.target, tf.argmax(self.logits, 2)),
-                    self.boolean_mask
-                ), axis=1
-            )
-        else:
-            mistakes = tf.reduce_any(
-                tf.not_equal(self.target, tf.argmax(self.logits, 2)), axis=1
-            )
+        mistakes_per_output = []
+        for i in range(len(self.logits)):
+            if self.seq_length is not None:
+                mistakes = tf.reduce_any(
+                    tf.logical_and(
+                        tf.not_equal(self.target[:, :, i], tf.argmax(self.logits[i], 2)),
+                        self.boolean_mask
+                    ), axis=1
+                )
+            else:
+                mistakes = tf.reduce_any(
+                    tf.not_equal(self.target[:, :, i], tf.argmax(self.logits[i], 2)), axis=1
+                )
+            mistakes_per_output.append(mistakes)
 
-        return tf.reduce_mean(tf.cast(mistakes, tf.float32))
+        if len(mistakes_per_output) == 1:
+            all_mistakes = mistakes_per_output[0]
+        else:
+            concat_mistakes = tf.concat(mistakes_per_output, axis=1)
+            all_mistakes = tf.reduce_any(concat_mistakes, axis=1)
+
+        return tf.reduce_mean(tf.cast(all_mistakes, tf.float32))
 
     @lazy_property
     def training(self):
-        if self.seq_length is not None:
-            self._softmax_loss = s2s.sequence_loss(
-                self.logits, self.target, self.numeric_mask
-            )
+        softmax_loss_per_output = []
+        for i in range(len(self.logits)):
+            if self.seq_length is not None:
+                softmax_loss = s2s.sequence_loss(
+                    self.logits[i], self.target[:, :, i], self.numeric_mask
+                )
+            else:
+                softmax_loss = s2s.sequence_loss(
+                    self.logits[i], self.target[:, :, i],
+                    tf.ones_like(self.target[:, :, i], self.logits[i].dtype)
+                )
+            softmax_loss_per_output.append(softmax_loss)
+
+        if len(softmax_loss_per_output) == 1:
+            self._softmax_loss = softmax_loss_per_output[0]
         else:
-            self._softmax_loss = s2s.sequence_loss(
-                self.logits, self.target,
-                tf.ones_like(self.target, self.logits.dtype)
-            )
+            self._softmax_loss = tf.add_n(softmax_loss_per_output)
 
         if isinstance(self.cell, ACTWrapper):
             self._ponder_loss = self.time_penalty * self.cell.get_ponder_cost(self.seq_length)

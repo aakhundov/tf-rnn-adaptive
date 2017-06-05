@@ -34,7 +34,7 @@ def generate_parity_data(batch_size, dimensions=64, seed=None):
         input_vector[idx[:threshold]] = values
 
         inputs.append([input_vector])
-        targets.append([parity])
+        targets.append([[parity]])
 
     if seed is not None:
         np.random.set_state(state)
@@ -55,7 +55,7 @@ def generate_logic_data(batch_size, min_time_steps=1, max_time_steps=10,
 
     for b in range(batch_size):
         input_steps = np.zeros([max_time_steps, max_gates * len(logic_gates) + 2])
-        target_steps = np.zeros([max_time_steps])
+        target_steps = np.zeros([max_time_steps, 1])
 
         seq_length.append(
             np.random.randint(
@@ -78,7 +78,7 @@ def generate_logic_data(batch_size, min_time_steps=1, max_time_steps=10,
                 b1, b0 = logic_gates[gate][b1][b0], b1
                 input_steps[t][2 + g * len(logic_gates) + gate] = 1
 
-            target_steps[t] = b1
+            target_steps[t][0] = b1
             b0 = b1
 
         inputs.append(input_steps)
@@ -99,7 +99,7 @@ def generate_addition_data(batch_size, min_time_steps=1, max_time_steps=5, max_d
 
     for b in range(batch_size):
         input_steps = np.zeros([max_time_steps, max_digits * 10])
-        target_steps = np.zeros([max_time_steps, max_digits+1, 11])
+        target_steps = np.zeros([max_time_steps, max_digits+1])
 
         seq_length.append(
             np.random.randint(
@@ -122,9 +122,9 @@ def generate_addition_data(batch_size, min_time_steps=1, max_time_steps=5, max_d
 
             for d in range(max_digits + 1):
                 if d < len(sum_digits):
-                    target_steps[t][d][sum_digits[d]] = 1
+                    target_steps[t][d] = sum_digits[d]
                 else:
-                    target_steps[t][d][10] = 1
+                    target_steps[t][d] = 10
 
         inputs.append(input_steps)
         targets.append(target_steps)
@@ -178,7 +178,7 @@ def test_parity_data(inputs, targets):
             if inputs[b][0][d] == 1.0:
                 computed_parity = 1 - computed_parity
 
-        target_parity = targets[b][0]
+        target_parity = targets[b][0][0]
         assert (computed_parity == target_parity),\
             "Parity does not match at batch {0}: {1} (computed) vs. {2} (target)".format(
                     b, computed_parity, target_parity
@@ -202,7 +202,7 @@ def test_logic_data(inputs, targets, seq_length):
                     gate = np.asscalar(np.argmax(one_hot))
                     b1, b0 = logic_gates[gate][b1][b0], b1
 
-            target_bit = targets[b][t]
+            target_bit = targets[b][t][0]
             assert (target_bit == b1), \
                 "Target bit does not match at batch {0} time step {1}: {2} (computed) vs. {3} (target)".format(
                     b, t, b1, target_bit
@@ -221,9 +221,8 @@ def test_addition_data(inputs, targets, seq_length):
 
             target_sum = 0
             for d in range(len(targets[b][t])):
-                one_hot = targets[b][t][d]
-                if one_hot[-1] == 0.0:
-                    target_sum = target_sum * 10 + np.argmax(one_hot)
+                if targets[b][t][d] != 10:
+                    target_sum = target_sum * 10 + targets[b][t][d]
 
             running_sum += current_number
             assert (running_sum == target_sum), \

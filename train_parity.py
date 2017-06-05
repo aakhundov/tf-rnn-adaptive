@@ -24,10 +24,11 @@ DIMENSIONS = 16
 TIME_STEPS = 1
 INPUT_SIZE = DIMENSIONS
 NUM_CLASSES = 2
+NUM_OUTPUTS = 1
 
 NUM_HIDDEN = 128
 TIME_PENALTY = 0.001
-PONDER_LIMIT = 20
+PONDER_LIMIT = 10
 LEARNING_RATE = 0.001
 WITH_ACT = True
 
@@ -70,11 +71,11 @@ if __name__ == "__main__":
         cell = ACTWrapper(cell, ponder_limit=PONDER_LIMIT)
 
     inputs = tf.placeholder(tf.float32, [None, TIME_STEPS, INPUT_SIZE])
-    targets = tf.placeholder(tf.int64, [None, TIME_STEPS])
+    targets = tf.placeholder(tf.int64, [None, TIME_STEPS, NUM_OUTPUTS])
 
     print("Creating model...")
     model = ACTModel(
-        inputs, targets, TIME_STEPS, NUM_CLASSES, cell, TIME_PENALTY,
+        inputs, targets, TIME_STEPS, NUM_CLASSES, cell, NUM_OUTPUTS, TIME_PENALTY,
         optimizer=tf.train.AdamOptimizer(LEARNING_RATE)
     )
 
