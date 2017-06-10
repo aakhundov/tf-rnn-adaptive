@@ -46,11 +46,11 @@ class ACTModel:
         self._numerical_mask = None
 
         if self.seq_length is not None:
-            self.boolean_mask = tf.sequence_mask(self.seq_length, self.time_steps)
+            self._boolean_mask = tf.sequence_mask(self.seq_length, self.time_steps)
             if self.target_offset is not None:
                 offset_mask = tf.logical_not(tf.sequence_mask(self.target_offset, self.time_steps))
-                self.boolean_mask = tf.logical_and(self.boolean_mask, offset_mask)
-            self.numeric_mask = tf.cast(self.boolean_mask, data.dtype)
+                self._boolean_mask = tf.logical_and(self._boolean_mask, offset_mask)
+            self._numerical_mask = tf.cast(self._boolean_mask, data.dtype)
 
         self.logits
         self.training
@@ -85,7 +85,7 @@ class ACTModel:
                 mistakes = tf.reduce_any(
                     tf.logical_and(
                         tf.not_equal(self.target[:, :, i], tf.argmax(self.logits[i], 2)),
-                        self.boolean_mask
+                        self._boolean_mask
                     ), axis=1
                 )
             else:
@@ -108,7 +108,7 @@ class ACTModel:
         for i in range(len(self.logits)):
             if self.seq_length is not None:
                 softmax_loss = s2s.sequence_loss(
-                    self.logits[i], self.target[:, :, i], self.numeric_mask
+                    self.logits[i], self.target[:, :, i], self._numerical_mask
                 )
             else:
                 softmax_loss = s2s.sequence_loss(
