@@ -21,7 +21,7 @@ BATCH_SIZE = 32
 VAL_SIZE = 1000
 
 MAX_DIGITS = 5
-MIN_TIME_STEPS = 1
+MIN_TIME_STEPS = 2
 MAX_TIME_STEPS = 5
 INPUT_SIZE = MAX_DIGITS * 10
 NUM_CLASSES = 11
@@ -80,7 +80,8 @@ if __name__ == "__main__":
     print("Creating model...")
     model = ACTModel(
         inputs, targets, MAX_TIME_STEPS, NUM_CLASSES, cell, NUM_OUTPUTS, TIME_PENALTY,
-        seq_length=seq_length, optimizer=tf.train.AdamOptimizer(LEARNING_RATE)
+        seq_length=seq_length, target_offset=tf.ones([tf.shape(inputs)[0]], dtype=tf.int32),
+        optimizer=tf.train.AdamOptimizer(LEARNING_RATE)
     )
 
     log_path = "./results/logs/" + model_name + ".txt"
