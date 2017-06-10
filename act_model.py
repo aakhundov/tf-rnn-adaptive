@@ -22,7 +22,8 @@ def lazy_property(func):
 
 class ACTModel:
     def __init__(self, data, target, time_steps, num_classes, rnn_cell,
-                 num_outputs=1, time_penalty=0.001, seq_length=None, optimizer=None):
+                 num_outputs=1, time_penalty=0.001, seq_length=None,
+                 target_offset=None, optimizer=None):
 
         self.data = data
         self.target = target
@@ -32,6 +33,7 @@ class ACTModel:
         self.num_outputs = num_outputs
         self.time_penalty = time_penalty
         self.seq_length = seq_length
+        self.target_offset = target_offset
         self.optimizer = optimizer if optimizer \
             else tf.train.AdamOptimizer(0.001)
 
@@ -45,6 +47,9 @@ class ACTModel:
 
         if self.seq_length is not None:
             self.boolean_mask = tf.sequence_mask(self.seq_length, self.time_steps)
+            if self.target_offset is not None:
+                offset_mask = tf.logical_not(tf.sequence_mask(self.target_offset, self.time_steps))
+                self.boolean_mask = tf.logical_and(self.boolean_mask, offset_mask)
             self.numeric_mask = tf.cast(self.boolean_mask, data.dtype)
 
         self.logits
