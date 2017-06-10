@@ -144,7 +144,7 @@ def generate_sort_data(batch_size, min_numbers=2, max_numbers=15, seed=None):
 
     for b in range(batch_size):
         input_steps = np.zeros([max_numbers * 2, 2])
-        target_steps = np.zeros([max_numbers * 2, max_numbers])
+        target_steps = np.zeros([max_numbers * 2, 1])
 
         numbers_count = np.random.randint(
             min_numbers,
@@ -160,7 +160,7 @@ def generate_sort_data(batch_size, min_numbers=2, max_numbers=15, seed=None):
                 if n == numbers_count - 1:
                     input_steps[n][0] = 1
             else:
-                target_steps[n][indices[n - numbers_count]] = 1
+                target_steps[n][0] = indices[n - numbers_count]
 
         inputs.append(input_steps)
         targets.append(target_steps)
@@ -238,14 +238,12 @@ def test_sort_data(inputs, targets, seq_length):
 
         for n in range(numbers_count):
             numbers.append(inputs[b][n][1])
-            target_indices.append(
-                np.argmax(targets[b][numbers_count + n])
-            )
+            target_indices.append(targets[b][numbers_count + n][0])
 
             if n == numbers_count - 1:
                 assert (inputs[b][n][0] == 1.0), "End bit is not one at batch {0} time step {1}".format(b, n)
             else:
-                assert (inputs[b][n][0] == 0.0), "End bit is not zero at batch {0} time step {1}".format(b, n)
+                assert (inputs[b][n][0] == 0.0), "Non-end bit is not zero at batch {0} time step {1}".format(b, n)
 
         computed_indices = np.argsort(numbers)
         assert np.all(computed_indices == target_indices), \
