@@ -93,7 +93,11 @@ if __name__ == "__main__":
     saver = tf.train.Saver()
     log = open(log_path, "w")
 
-    with tf.Session() as sess:
+    config = tf.ConfigProto()
+    config.gpu_options.allow_growth = True
+    config.gpu_options.per_process_gpu_memory_fraction = 0.2
+
+    with tf.Session(config=config) as sess:
         print("Initializing variables...")
         sess.run(tf.global_variables_initializer())
 
