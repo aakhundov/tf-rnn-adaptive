@@ -15,7 +15,7 @@ logic_gates = [
 ]
 
 
-def generate_parity_data(batch_size, dimensions=64, seed=None):
+def generate_parity_data(batch_size, dimensions=64, parity_bits=0, seed=None):
     inputs, targets = [], []
 
     if seed is not None:
@@ -28,7 +28,11 @@ def generate_parity_data(batch_size, dimensions=64, seed=None):
         idx = np.arange(0, dimensions)
         np.random.shuffle(idx)
 
-        threshold = np.random.randint(1, dimensions + 1)
+        if parity_bits > 0 and parity_bits <= dimensions:
+            threshold = parity_bits
+        else:
+            threshold = np.random.randint(1, dimensions + 1)
+
         values = np.random.randint(2, size=[threshold]) * 2 - 1
         parity = np.sum(np.where(values > 0, [1.0], [0.0]), dtype=np.int32) % 2
         input_vector[idx[:threshold]] = values
@@ -253,7 +257,6 @@ def test_sort_data(inputs, targets, seq_length):
 
 
 if __name__ == "__main__":
-
     print("Testing parity data... ", end="")
     for i in range(100):
         test_parity_data(*generate_parity_data(128))
