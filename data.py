@@ -47,7 +47,7 @@ def generate_parity_data(batch_size, dimensions=64, parity_bits=0, seed=None):
 
 
 def generate_logic_data(batch_size, min_time_steps=1, max_time_steps=10,
-                        min_gates=1, max_gates=10, used_gates=10, seed=None):
+                        min_gates=1, max_gates=10, fixed_gates=0, used_gates=10, seed=None):
     inputs, targets, seq_length = [], [], []
 
     if used_gates > len(logic_gates):
@@ -75,7 +75,10 @@ def generate_logic_data(batch_size, min_time_steps=1, max_time_steps=10,
                 input_steps[t][0] = b0
             input_steps[t][1] = b1
 
-            num_gates = np.random.randint(min_gates, max_gates + 1)
+            if fixed_gates > 0 and fixed_gates <= max_gates:
+                num_gates = fixed_gates
+            else:
+                num_gates = np.random.randint(min_gates, max_gates + 1)
 
             for g in range(num_gates):
                 gate = np.random.randint(used_gates)
