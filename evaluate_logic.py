@@ -94,9 +94,12 @@ if __name__ == "__main__":
                 }
             )
 
-            echo("{:d}\t{:.2f}\t{:d}".format(
+            eval_ponder = np.ravel(eval_ponder)
+            eval_ponder = eval_ponder[np.nonzero(eval_ponder)]
+
+            echo("{:d}\t{:.2f}\t{:.2f}".format(
                 gates, 100 * eval_error,
-                np.mean(eval_ponder).astype(np.int32)
+                np.mean(eval_ponder)
             ), log)
 
         log.close()

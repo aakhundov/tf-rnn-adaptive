@@ -89,9 +89,9 @@ if __name__ == "__main__":
                 }
             )
 
-            echo("{:d}\t{:.2f}\t{:d}".format(
+            echo("{:d}\t{:.2f}\t{:.2f}".format(
                 dim, 100 * eval_error,
-                np.mean(eval_ponder).astype(np.int32)
+                np.mean(eval_ponder)
             ), log)
 
         log.close()
