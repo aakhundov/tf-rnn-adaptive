@@ -15,7 +15,7 @@ logic_gates = [
 ]
 
 
-def generate_parity_data(batch_size, dimensions=64, parity_bits=0, seed=None):
+def generate_parity_data(batch_size, dimensions=64, fixed_parity_bits=0, seed=None):
     inputs, targets = [], []
 
     if seed is not None:
@@ -28,8 +28,8 @@ def generate_parity_data(batch_size, dimensions=64, parity_bits=0, seed=None):
         idx = np.arange(0, dimensions)
         np.random.shuffle(idx)
 
-        if parity_bits > 0 and parity_bits <= dimensions:
-            threshold = parity_bits
+        if fixed_parity_bits > 0 and fixed_parity_bits <= dimensions:
+            threshold = fixed_parity_bits
         else:
             threshold = np.random.randint(1, dimensions + 1)
 
@@ -97,7 +97,9 @@ def generate_logic_data(batch_size, min_time_steps=1, max_time_steps=10,
     return np.stack(inputs), np.stack(targets), seq_length
 
 
-def generate_addition_data(batch_size, min_time_steps=1, max_time_steps=5, max_digits=5, seed=None):
+def generate_addition_data(batch_size, min_time_steps=1, max_time_steps=5, max_digits=5,
+                           fixed_digits=0, seed=None):
+
     inputs, targets, seq_length = [], [], []
 
     if seed is not None:
@@ -117,7 +119,11 @@ def generate_addition_data(batch_size, min_time_steps=1, max_time_steps=5, max_d
 
         running_sum = 0
         for t in range(seq_length[-1]):
-            digits_no = np.random.randint(1, max_digits + 1)
+            if fixed_digits > 0 and fixed_digits <= max_digits:
+                digits_no = fixed_digits
+            else:
+                digits_no = np.random.randint(1, max_digits + 1)
+
             current_number = np.random.randint(10 ** (digits_no - 1), 10 ** digits_no)
             number_digits = np.array([int(c) for c in str(current_number)])
 
@@ -260,6 +266,7 @@ def test_sort_data(inputs, targets, seq_length):
 
 
 if __name__ == "__main__":
+
     print("Testing parity data... ", end="")
     for i in range(100):
         test_parity_data(*generate_parity_data(128))

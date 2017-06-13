@@ -74,10 +74,11 @@ if __name__ == "__main__":
     with tf.Session() as sess:
         print("Restoring model...")
         saver.restore(sess, model_path)
+        print()
 
         for dim in range(1, DIMENSIONS+1):
             eval_xs, eval_ys = generate_parity_data(
-                EVAL_SIZE, dimensions=DIMENSIONS, parity_bits=dim, seed=54321 * dim
+                EVAL_SIZE, dimensions=DIMENSIONS, fixed_parity_bits=dim, seed=54321 * dim
             )
 
             eval_error, eval_ponder = sess.run(

@@ -20,7 +20,7 @@ EVAL_SIZE = 1000
 
 MAX_GATES = 10
 USED_GATES = 10
-EVAL_TIME_STEPS = 5
+EVAL_TIME_STEPS = 3
 INPUT_SIZE = MAX_GATES * 10 + 2
 NUM_CLASSES = 2
 NUM_OUTPUTS = 1
@@ -30,6 +30,7 @@ PONDER_LIMIT = 10
 TIME_PENALTY = 0.0001
 LEARNING_RATE = 0.001
 WITH_ACT = True
+
 
 if __name__ == "__main__":
 
@@ -75,6 +76,7 @@ if __name__ == "__main__":
     with tf.Session() as sess:
         print("Restoring model...")
         saver.restore(sess, model_path)
+        print()
 
         for gates in range(1, MAX_GATES+1):
             eval_xs, eval_ys, eval_seq = generate_logic_data(
