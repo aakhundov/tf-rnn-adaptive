@@ -148,7 +148,7 @@ def generate_addition_data(batch_size, min_time_steps=1, max_time_steps=5, max_d
     return np.stack(inputs), np.stack(targets), seq_length
 
 
-def generate_sort_data(batch_size, min_numbers=2, max_numbers=15, seed=None):
+def generate_sort_data(batch_size, min_numbers=2, max_numbers=15, fixed_numbers=0, seed=None):
     inputs, targets, seq_length = [], [], []
 
     if seed is not None:
@@ -159,10 +159,14 @@ def generate_sort_data(batch_size, min_numbers=2, max_numbers=15, seed=None):
         input_steps = np.zeros([max_numbers * 2, 2])
         target_steps = np.zeros([max_numbers * 2, 1])
 
-        numbers_count = np.random.randint(
-            min_numbers,
-            max_numbers + 1
-        )
+        if fixed_numbers > 0 and fixed_numbers <= max_numbers:
+            numbers_count = fixed_numbers
+        else:
+            numbers_count = np.random.randint(
+                min_numbers,
+                max_numbers + 1
+            )
+
         seq_length.append(numbers_count * 2)
         numbers = np.random.randn(numbers_count)
         indices = np.argsort(numbers)
