@@ -32,7 +32,7 @@ NUM_HIDDEN = 512
 PONDER_LIMIT = 10
 TIME_PENALTY = 0.001
 LEARNING_RATE = 0.001
-WITH_ACT = False
+WITH_ACT = True
 
 
 if __name__ == "__main__":
