@@ -16,7 +16,7 @@ def echo(message, file):
 
 
 SEED = 0
-TEST_SIZE = 1000
+EVAL_SIZE = 1000
 
 DIMENSIONS = 16
 TIME_STEPS = 1
@@ -77,7 +77,7 @@ if __name__ == "__main__":
 
         for dim in range(1, DIMENSIONS+1):
             eval_xs, eval_ys = generate_parity_data(
-                1000, dimensions=DIMENSIONS, parity_bits=dim, seed=54321
+                EVAL_SIZE, dimensions=DIMENSIONS, parity_bits=dim, seed=54321 * dim
             )
 
             eval_error, eval_ponder = sess.run(
