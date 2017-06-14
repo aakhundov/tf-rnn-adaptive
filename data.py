@@ -273,20 +273,20 @@ if __name__ == "__main__":
 
     print("Testing parity data... ", end="")
     for i in range(100):
-        test_parity_data(*generate_parity_data(128))
+        test_parity_data(*generate_parity_data(128, fixed_parity_bits=i % 10))
     print("passed")
 
     print("Testing logic data... ", end="")
     for i in range(100):
-        test_logic_data(*generate_logic_data(16))
+        test_logic_data(*generate_logic_data(16, fixed_gates=i % 10))
     print("passed")
 
     print("Testing addition data... ", end="")
     for i in range(100):
-        test_addition_data(*generate_addition_data(32))
+        test_addition_data(*generate_addition_data(32, fixed_digits=i % 10))
     print("passed")
 
     print("Testing sort data... ", end="")
     for i in range(100):
-        test_sort_data(*generate_sort_data(16))
+        test_sort_data(*generate_sort_data(16, fixed_numbers=i % 10))
     print("passed")
