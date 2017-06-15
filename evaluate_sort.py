@@ -87,21 +87,35 @@ if __name__ == "__main__":
                 fixed_numbers=numbers, seed=12345 * numbers
             )
 
-            eval_error, eval_ponder = sess.run(
-                [model.evaluation, model.ponder_steps],
-                feed_dict={
-                    inputs: eval_xs,
-                    targets: eval_ys,
-                    seq_length: eval_seq
-                }
-            )
+            if WITH_ACT:
+                eval_error, eval_ponder = sess.run(
+                    [model.evaluation, model.ponder_steps],
+                    feed_dict={
+                        inputs: eval_xs,
+                        targets: eval_ys,
+                        seq_length: eval_seq
+                    }
+                )
 
-            eval_ponder = np.ravel(eval_ponder)
-            eval_ponder = eval_ponder[np.nonzero(eval_ponder)]
+                eval_ponder = np.ravel(eval_ponder)
+                eval_ponder = eval_ponder[np.nonzero(eval_ponder)]
 
-            echo("{:d}\t{:.2f}\t{:.2f}".format(
-                numbers, 100 * eval_error,
-                np.mean(eval_ponder)
-            ), log)
+                echo("{:d}\t{:.2f}\t{:.2f}".format(
+                    numbers, 100 * eval_error,
+                    np.mean(eval_ponder)
+                ), log)
+            else:
+                eval_error = sess.run(
+                    model.evaluation,
+                    feed_dict={
+                        inputs: eval_xs,
+                        targets: eval_ys,
+                        seq_length: eval_seq
+                    }
+                )
+
+                echo("{:d}\t{:.2f}".format(
+                    numbers, 100 * eval_error
+                ), log)
 
         log.close()

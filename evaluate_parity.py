@@ -81,17 +81,30 @@ if __name__ == "__main__":
                 EVAL_SIZE, dimensions=DIMENSIONS, fixed_parity_bits=dim, seed=54321 * dim
             )
 
-            eval_error, eval_ponder = sess.run(
-                [model.evaluation, model.ponder_steps],
-                feed_dict={
-                    inputs: eval_xs,
-                    targets: eval_ys
-                }
-            )
+            if WITH_ACT:
+                eval_error, eval_ponder = sess.run(
+                    [model.evaluation, model.ponder_steps],
+                    feed_dict={
+                        inputs: eval_xs,
+                        targets: eval_ys
+                    }
+                )
 
-            echo("{:d}\t{:.2f}\t{:.2f}".format(
-                dim, 100 * eval_error,
-                np.mean(eval_ponder)
-            ), log)
+                echo("{:d}\t{:.2f}\t{:.2f}".format(
+                    dim, 100 * eval_error,
+                    np.mean(eval_ponder)
+                ), log)
+            else:
+                eval_error = sess.run(
+                    model.evaluation,
+                    feed_dict={
+                        inputs: eval_xs,
+                        targets: eval_ys
+                    }
+                )
+
+                echo("{:d}\t{:.2f}".format(
+                    dim, 100 * eval_error
+                ), log)
 
         log.close()
