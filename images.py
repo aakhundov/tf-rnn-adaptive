@@ -1,12 +1,14 @@
 import numpy as np
 import matplotlib as mpl
 import matplotlib.pyplot as plt
+from matplotlib.ticker import MaxNLocator
 
 
 mpl.rcParams['axes.linewidth'] = 0.0
 mpl.rcParams['lines.dotted_pattern'] = [1, 1]
 mpl.rcParams['lines.scale_dashes'] = False
 
+dpi = 150
 
 epochs = 250
 steps_per_epoch = 1000
@@ -15,20 +17,21 @@ log_dir = "results/logs/"
 eval_dir = "results/evaluation/"
 image_dir = "results/images/"
 
-experiments = ["parity", "logic", "sort"]
+experiments = ["parity", "logic", "addition", "sort"]
 time_penalties = ["0.0001", "0.001", "0.01", "0.1", "x"]
 penalty_colors = ["#7200FF", "#19E0DC", "#CDE480", "#FF1600", "#000000"]
 seeds = {
     "parity": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
     "logic": [0, 3, 6, 8],
+    "addition": [0],
     "sort": [0]
 }
 
-error_image_y_limits = [0.5, 0.7, 0.8]
-error_vs_diff_image_y_limits = [0.9, 0.5, 0.4]
-ponder_vs_diff_image_y_limits = [10, 10, 10]
-last_error_image_y_limits = [0.50, 0.30, 0.20]
-difficulties = [[1, 16], [1, 10], [2, 10]]
+error_image_y_limits = [0.5, 0.7, 1.0, 0.8]
+error_vs_diff_image_y_limits = [0.9, 0.5, 1.0, 0.4]
+ponder_vs_diff_image_y_limits = [10, 10, 10, 10]
+last_error_image_y_limits = [0.50, 0.30, 0.50, 0.20]
+difficulties = [[1, 16], [1, 10], [1, 5], [2, 10]]
 
 
 errors = {e: np.zeros([
@@ -94,7 +97,7 @@ for i, e in enumerate(experiments):
     plt.ylim(0, error_image_y_limits[i])
 
     plt.axes().set_aspect(steps_per_epoch * epochs / error_image_y_limits[i] / 1.1)
-    plt.savefig(image_dir + e + "_error.png", dpi=300, bbox_inches='tight')
+    plt.savefig(image_dir + e + "_error.png", dpi=dpi, bbox_inches='tight')
 
     # plt.show()
     plt.close()
@@ -104,6 +107,7 @@ for i, e in enumerate(experiments):
 for i, e in enumerate(experiments):
     plt.axes().grid(True, linewidth=0.75, linestyle=":")
     x_axis = np.arange(difficulties[i][0], difficulties[i][1]+1, 1)
+    plt.axes().xaxis.set_major_locator(MaxNLocator(integer=True))
 
     for p in range(len(time_penalties)):
         for s in range(len(seeds[e])):
@@ -120,7 +124,7 @@ for i, e in enumerate(experiments):
     plt.ylim(0, error_vs_diff_image_y_limits[i])
 
     plt.axes().set_aspect((difficulties[i][1] - difficulties[i][0]) / error_vs_diff_image_y_limits[i] / 1.25)
-    plt.savefig(image_dir + e + "_difficulty_error.png", dpi=300, bbox_inches='tight')
+    plt.savefig(image_dir + e + "_difficulty_error.png", dpi=dpi, bbox_inches='tight')
 
     # plt.show()
     plt.close()
@@ -130,6 +134,7 @@ for i, e in enumerate(experiments):
 for i, e in enumerate(experiments):
     plt.axes().grid(True, linewidth=0.75, linestyle=":")
     x_axis = np.arange(difficulties[i][0], difficulties[i][1]+1, 1)
+    plt.axes().xaxis.set_major_locator(MaxNLocator(integer=True))
 
     for p in range(len(time_penalties)-1):
         for s in range(len(seeds[e])):
@@ -146,7 +151,7 @@ for i, e in enumerate(experiments):
     plt.ylim(0, ponder_vs_diff_image_y_limits[i])
 
     plt.axes().set_aspect((difficulties[i][1] - difficulties[i][0]) / ponder_vs_diff_image_y_limits[i] / 1.25)
-    plt.savefig(image_dir + e + "_difficulty_ponder.png", dpi=300, bbox_inches='tight')
+    plt.savefig(image_dir + e + "_difficulty_ponder.png", dpi=dpi, bbox_inches='tight')
 
     # plt.show()
     plt.close()
@@ -177,7 +182,7 @@ for i, e in enumerate(experiments):
     plt.axes().set_xticklabels([""] + x_labels)
 
     plt.axes().set_aspect(len(x_positions) / y_values.max() / 1.5)
-    plt.savefig(image_dir + e + "_last_error.png", dpi=300, bbox_inches='tight')
+    plt.savefig(image_dir + e + "_last_error.png", dpi=dpi, bbox_inches='tight')
 
     # plt.show()
     plt.close()
