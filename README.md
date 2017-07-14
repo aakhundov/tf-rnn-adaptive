@@ -4,6 +4,4 @@ Implementation of **Adaptive Computation Time** (ACT) algorithm for recurrent ne
 
 * **act_model.py** file contains configurable TensorFlow model facilitating training RNN's with and without ACT for solving sequence labelling task. The model is general enough to be used in all **train_\*.py** files with different configuration for reproducing four experiments from the original paper.
 
-* **mnist_demo.py** file contains demonstration of the ACTWrapper in application to MNIST digits recognition task: here consecutive rows of each image are fed to the RNN (ACTWrapper wrapped around TensorFlow RNN cell) at subsequent time steps.
-
-* **train_\*.py** files reproduce four experiments from the above-mentioned paper: "parity", "logic", "addition", and "sort". The configuration parameters of each experiment are specified as upper-case constants in the beginning of each script. The default values of the parameters are downsized for reproducing on a moderate hardware but can be easily restored to ones specified in the paper.
+* **train_\*.py** files reproduce four experiments from the above-mentioned paper: "parity", "logic", "addition", and "sort". The configuration parameters of each experiment are specified as upper-case constants in the beginning of each script. The default values of the parameters are downsized for reproducing on a moderate hardware but can be easily restored to ones specified in the paper. Some of the train models (in a form of TF checkpoints) and corresponding training logs are available in **results** folder.
